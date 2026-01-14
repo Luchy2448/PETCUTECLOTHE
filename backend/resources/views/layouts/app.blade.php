@@ -201,33 +201,87 @@
             background-color: rgba(0, 0,0,0.02);
         }
         
+        /* Paginación personalizada PET CUTE CLOTHES */
         .pagination {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
+            align-items: center;
+            gap: 0.25rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
         }
         
-        .page-item.active .page-link {
-            pointer-events: none;
-            cursor: default;
-            color: var(--color-rosa);
-            font-weight: 500;
+        .page-item {
+            margin: 0 0.125rem;
         }
         
         .page-link {
-            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.5rem;
+            height: 2.5rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            background-color: var(--color-blanco);
             color: var(--color-gris);
             font-weight: 500;
-        }
-        
-        .page-link:not(.disabled) {
+            text-decoration: none;
+            transition: all 0.2s ease;
             cursor: pointer;
-            color: var(--color-gris);
         }
         
         .page-link:hover {
-            color: var(--color-rosa);
+            background-color: var(--color-rosa);
+            border-color: var(--color-rosa);
+            color: var(--color-blanco) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(255, 182, 193, 0.3);
+        }
+        
+        .page-item.active .page-link {
+            background-color: var(--color-rosa);
+            border-color: var(--color-rosa);
+            color: var(--color-blanco) !important;
+            font-weight: 600;
+            z-index: 1;
+        }
+        
+        .page-item.disabled .page-link {
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+            color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.65;
+            transform: none;
+        }
+        
+        .page-item.disabled .page-link:hover {
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+            color: #6c757d;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Responsive: ocultar texto en móvil */
+        @media (max-width: 768px) {
+            .pagination {
+                gap: 0.125rem;
+            }
+            
+            .page-link {
+                min-width: 2.25rem;
+                height: 2.25rem;
+                padding: 0.375rem 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            .page-item {
+                margin: 0 0.0625rem;
+            }
         }
         
         .breadcrumb {
@@ -375,6 +429,9 @@
             </p>
         </div>
     </footer>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

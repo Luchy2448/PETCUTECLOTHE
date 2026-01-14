@@ -124,8 +124,10 @@
                                            class="btn btn-sm btn-outline-success" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button onclick="eliminarProducto({{ $producto->id }})" 
-                                                class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger delete-product" 
+                                                data-product-id="{{$producto->id}}" 
+                                                title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -149,10 +151,11 @@
         <div class="card-footer bg-light">
             <div class="row align-items-center">
                 <div class="col">
-<small class="text-muted">
-                        Mostrando <span id="visible-count">{{ $productos->count() }}</span> 
-                        de <span id="total-count">{{ $productos->total() }}</span> productos
-                    </small>
+                    <div class="pagination-info">
+                        <i class="fas fa-box"></i>
+                        Mostrando <span id="visible-count">{{$productos->count()}}</span>
+                        de <span id="total-count">{{$productos->total()}}</span> productos
+                    </div>
                 </div>
                 <div class="col-auto">
                     {{ $productos->links() }}
@@ -244,43 +247,23 @@
 @endif
 
 <!-- Scripts -->
-<!-- Estilos para Admin con conflictos resueltos -->
-<link rel="stylesheet" href="{{ asset('css/admin/products.css') }}">
+<!-- Estilos específicos para admin -->
 <style>
-/* SOBREESCRITURA - Estilos de Laravel que entran en conflicto */
-.pagination {
-    margin: 0;
-    padding: 0;
-}
-
-.page-link {
+/* Info de paginación */
+.pagination-info {
+    background: linear-gradient(135deg, var(--color-celeste) 0%, var(--color-verde) 100%);
+    color: var(--color-blanco);
     padding: 0.5rem 1rem;
-    margin: 0 0.25rem;
-    border-radius: 0.25rem;
-}
-
-.page-item.disabled {
-    opacity: 0.5;
-}
-
-.page-item.active {
-    background-color: #e9ecef;
-}
-
-/* ESTILOS PERSONALIZADOS - Prioridad sobre los de Laravel */
-.pagination-container {
-    display: flex;
-    justify-content: center;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
     align-items: center;
-    margin: 1rem 0;
+    gap: 0.5rem;
 }
 
-.pagination-info-text {
-    background-color: #17a2b8;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 1rem;
-    margin-bottom: 1rem;
+.pagination-info i {
+    font-size: 0.75rem;
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -289,11 +272,15 @@
 <script>
 let productoIdAEliminar = null;
 
-function eliminarProducto(id) {
-    productoIdAEliminar = id;
-    const modal = new bootstrap.Modal(document.getElementById('eliminarModal'));
-    modal.show();
-}
+// Event listener para botones de eliminar
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.delete-product')) {
+        const button = e.target.closest('.delete-product');
+        productoIdAEliminar = button.getAttribute('data-product-id');
+        const modal = new bootstrap.Modal(document.getElementById('eliminarModal'));
+        modal.show();
+    }
+});
 
 document.getElementById('confirmarEliminar').addEventListener('click', function() {
     if (productoIdAEliminar) {
@@ -337,41 +324,14 @@ setTimeout(() => {
     });
 }, 5000);
 
-// Actualizar contadores de paginación dinámicamente
-function updatePaginationCounters() {
-    const visibleRows = document.querySelectorAll('tbody tr:not([style*="display: none"])').length;
-    const totalCount = {{ $productos->total() }};
-    
-    document.getElementById('visible-count').textContent = visibleRows;
-    document.getElementById('total-count').textContent = totalCount;
-}
-
-// Actualizar contadores de paginación dinámicamente
-function updatePaginationCounters() {
-    const visibleRows = document.querySelectorAll('tbody tr:not([style*="display: none"])').length;
-    const totalCount = {{ $productos->total() }};
-    
-    const visibleCountElement = document.getElementById('visible-count');
-    const totalCountElement = document.getElementById('total-count');
-    
-    if (visibleCountElement) {
-        visibleCountElement.textContent = visibleRows;
-    }
-    if (totalCountElement) {
-        totalCountElement.textContent = totalCount;
-    }
-}
-
 // Inicializar contadores cuando se carga la página
 document.addEventListener('DOMContentLoaded', function() {
     updatePaginationCounters();
 });
 
 // Actualizar también cuando se usa la búsqueda
-document.addEventListener('input', function(e) {
-    if (e.target && e.target.id === 'searchInput') {
-        updatePaginationCounters();
-    }
+document.getElementById('searchInput').addEventListener('input', function() {
+    updatePaginationCounters();
 });
 </script>
 
