@@ -244,7 +244,45 @@
 @endif
 
 <!-- Scripts -->
+<!-- Estilos para Admin con conflictos resueltos -->
 <link rel="stylesheet" href="{{ asset('css/admin/products.css') }}">
+<style>
+/* SOBREESCRITURA - Estilos de Laravel que entran en conflicto */
+.pagination {
+    margin: 0;
+    padding: 0;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    margin: 0 0.25rem;
+    border-radius: 0.25rem;
+}
+
+.page-item.disabled {
+    opacity: 0.5;
+}
+
+.page-item.active {
+    background-color: #e9ecef;
+}
+
+/* ESTILOS PERSONALIZADOS - Prioridad sobre los de Laravel */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.pagination-info-text {
+    background-color: #17a2b8;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://kit.fontawesome.com/1a94b0c0c0.js" crossorigin="anonymous"></script>
 

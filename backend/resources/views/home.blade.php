@@ -38,7 +38,7 @@
                             <span class="talla-badge">Talla {{ ['XS','S','M','L','XL'][$producto->size - 1] }}</span>
                             <span class="price">ARS {{ number_format($producto->price, 0, ',', '.') }}</span>
                         </div>
-                        <a href="{{ url('products.show', $producto->id) }}" class="btn btn-primary w-100 mt-3">Ver Detalles</a>
+                        <a href="{{ route('products.show', $producto->id) }}" class="btn btn-primary w-100 mt-3">Ver Detalles</a>
                     </div>
                 </div>
             </div>

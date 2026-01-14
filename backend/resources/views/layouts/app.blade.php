@@ -47,6 +47,37 @@
             color: var(--color-amarillo) !important;
         }
         
+        /* Asegurar alineación vertical perfecta en navbar */
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-nav .nav-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Corregir botón de logout para que se alinee perfectamente */
+        .logout-btn {
+            border: none !important;
+            background: none !important;
+            padding: 0.5rem 1rem !important;
+            cursor: pointer;
+            color: var(--color-blanco) !important;
+            text-decoration: none !important;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .logout-btn:hover {
+            color: var(--color-amarillo) !important;
+        }
+        
         .btn-primary {
             background-color: var(--color-rosa);
             border-color: var(--color-rosa);
@@ -316,9 +347,9 @@
                             <a class="nav-link" href="/admin/products">Admin</a>
                         </li>
                         <li class="nav-item">
-                            <form action="/logout" method="POST" style="display: inline;">
+                            <form action="/logout" method="POST" style="display: inline; margin: 0;">
                                 @csrf
-                                <button type="submit" class="btn btn-link nav-link" style="border: none; background: none; padding: 0; cursor: pointer; color: white; text-decoration: none;">
+                                <button type="submit" class="logout-btn">
                                     Logout ({{ auth()->user()->name }})
                                 </button>
                             </form>
