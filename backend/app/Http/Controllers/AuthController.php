@@ -234,4 +234,95 @@ class AuthController extends Controller
         // $request->user() devuelve el usuario que inició sesión
         return response()->json($request->user(), 200);
     }
+
+    /**
+     * 🔐 MÉTODO: showLoginForm - Mostrar formulario de login
+     *
+     * Muestra el formulario de inicio de sesión (web)
+     *
+     * Ruta: GET /login
+     */
+    public function showLoginForm()
+    {
+        return view('auth.login');
+    }
+
+    /**
+     * 🔑 MÉTODO: loginWeb - Iniciar sesión (web)
+     *
+     * Procesa el formulario de inicio de sesión para web
+     *
+     * Ruta: POST /login
+     */
+    public function loginWeb(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->intended(route('home'))->with('success', '¡Bienvenido de nuevo!');
+        }
+
+        return back()->withErrors([
+            'email' => 'Las credenciales no coinciden',
+        ])->onlyInput('email');
+    }
+
+    /**
+     * 📝 MÉTODO: showRegistrationForm - Mostrar formulario de registro
+     *
+     * Muestra el formulario de registro de usuario (web)
+     *
+     * Ruta: GET /register
+     */
+    public function showRegistrationForm()
+    {
+        return view('auth.register');
+    }
+
+    /**
+     * 📝 MÉTODO: registerWeb - Registrar usuario (web)
+     *
+     * Procesa el formulario de registro para web
+     *
+     * Ruta: POST /register
+     */
+    public function registerWeb(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:6|confirmed'
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password'])
+        ]);
+
+        Auth::login($user);
+
+        return redirect()->route('home')->with('success', '¡Cuenta creada exitosamente!');
+    }
+
+    /**
+     * 🚪 MÉTODO: logoutWeb - Cerrar sesión (web)
+     *
+     * Cierra la sesión del usuario
+     *
+     * Ruta: POST /logout
+     */
+    public function logoutWeb(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('home')->with('success', '¡Sesión cerrada!');
+    }
 }

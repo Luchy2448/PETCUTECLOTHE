@@ -1,0 +1,244 @@
+/* Estilos Personalizados para Panel de Administración */
+
+/* Colores del Proyecto */
+:root {
+    --color-rosa: #FFB6C1;
+    --color-celeste: #ADD8E6;
+    --color-amarillo: #FFFACD;
+    --color-verde: #98FF98;
+    --color-blanco: #FFFFFF;
+    --color-gris: #333333;
+    --color-gris-claro: #6c757d;
+}
+
+/* Layout General */
+body {
+    background-color: var(--color-blanco);
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Mejoras de Navbar */
+.navbar {
+    background-color: var(--color-rosa);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--color-blanco) !important;
+    font-size: 1.5rem;
+}
+
+.navbar-nav .nav-link {
+    color: var(--color-blanco) !important;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--color-amarillo) !important;
+}
+
+/* Cards Mejorados */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Tabla de Productos */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: var(--color-gris);
+    color: var(--color-blanco);
+    font-weight: 600;
+    border: none;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+    border-top: 1px solid #dee2e6;
+    padding: 0.75rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 182, 193, 0.05);
+}
+
+/* Badges de Talla y Categoría */
+.badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+}
+
+/* Badges de Categoría */
+.badge-casual {
+    background-color: var(--color-celeste);
+    color: var(--color-blanco);
+}
+
+.badge-elegante {
+    background-color: #6c757d;
+    color: var(--color-blanco);
+}
+
+.badge-cumpleanos {
+    background-color: var(--color-amarillo);
+    color: var(--color-gris);
+}
+
+/* Badges de Stock */
+.stock-badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.stock-available {
+    background-color: var(--color-verde);
+    color: var(--color-blanco);
+}
+
+.stock-low {
+    background-color: #FFA07A;
+    color: var(--color-blanco);
+}
+
+.stock-out {
+    background-color: #dc3545;
+    color: var(--color-blanco);
+}
+
+/* Botones de Acción */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.btn-outline-success {
+    border-color: #198754;
+    color: #198754;
+    background-color: transparent;
+}
+
+.btn-outline-success:hover {
+    background-color: #198754;
+    color: white;
+}
+
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+    background-color: transparent;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Container Fluid */
+.container-fluid {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+/* Modal */
+.modal-header {
+    background-color: var(--color-gris);
+    color: var(--color-blanco);
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Toasts */
+.toast {
+    min-width: 250px;
+}
+
+.toast-header {
+    background-color: var(--color-gris);
+    color: var(--color-blanco);
+}
+
+.toast-header.bg-success {
+    background-color: var(--color-verde);
+}
+
+.toast-header.bg-danger {
+    background-color: #dc3545;
+}
+
+/* Form Controls */
+.input-group {
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 0.75rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--color-rosa);
+    box-shadow: 0 0 0 0.2rem rgba(255, 182, 193, 0.25);
+}
+
+/* Productos sin stock */
+.table tr.out-of-stock {
+    opacity: 0.7;
+}
+
+.table tr.out-of-stock td {
+    position: relative;
+}
+
+.table tr.out-of-stock td::after {
+    content: "AGOTADO";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(220, 53, 69, 0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+}
