@@ -64,7 +64,8 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <img src="{{ $producto->image_url }}" alt="{{ $producto->name }}" 
-                                             class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                             class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;"
+                                             onerror="this.src='https://picsum.photos/seed/petcute{$producto->id}/40/40.jpg'; this.onerror='';">
                                         <div>
                                             <strong class="d-block">{{ $producto->name }}</strong>
                                             <small class="text-muted">{{ Str::limit($producto->description, 30) }}</small>

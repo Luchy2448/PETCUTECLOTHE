@@ -18,13 +18,7 @@
     <!-- Detalle de Producto -->
     <div class="row">
         <div class="col-md-6 mb-4">
-            @if($producto->image_url)
-                <img src="{{ $producto->image_url }}" alt="{{ $producto->name }}" class="img-fluid rounded shadow" style="width: 100%; height: 400px; object-fit: cover;">
-            @else
-                <div class="rounded shadow d-flex align-items-center justify-content-center" style="width: 100%; height: 400px; background: linear-gradient(135deg, var(--color-rosa) 0%, var(--color-celeste) 100%); color: white; font-size: 5rem;">
-                    🐾
-                </div>
-            @endif
+            <img src="{{ $producto->image_url ?? 'https://picsum.photos/seed/petcute' . $producto->id . '/600/400.jpg' }}" alt="{{ $producto->name }}" class="img-fluid rounded shadow" style="width: 100%; height: 400px; object-fit: cover;" onerror="this.src='https://picsum.photos/seed/petcute{{ $producto->id }}/600/400.jpg';">
         </div>
         <div class="col-md-6">
             <div class="card">

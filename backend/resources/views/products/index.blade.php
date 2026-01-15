@@ -30,13 +30,7 @@
         @foreach($productos as $producto)
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
-                    @if($producto->image_url)
-                        <img src="{{ $producto->image_url }}" alt="{{ $producto->name }}" class="card-img-top" style="height: 200px; object-fit: cover;">
-                    @else
-                        <div class="card-img-top" style="height: 200px; background: linear-gradient(135deg, var(--color-rosa) 0%, var(--color-celeste) 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
-                            🐾
-                        </div>
-                    @endif
+                    <img src="{{ $producto->image_url ?? 'https://picsum.photos/seed/petcute' . $producto->id . '/400/200.jpg' }}" alt="{{ $producto->name }}" class="card-img-top" style="height:200px; object-fit: cover;" onerror="this.src='https://picsum.photos/seed/petcute{{ $producto->id }}/400/200.jpg';">
                     <div class="card-body">
                         <h5 class="card-title">{{ $producto->name }}</h5>
                         <p class="card-text">{{ Str::limit($producto->description, 80) }}</p>

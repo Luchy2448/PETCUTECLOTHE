@@ -24,7 +24,7 @@ use App\Http\Controllers\AdminController;
 
 // Página de inicio
 Route::get('/', function() {
-    $productos = \App\Models\Product::with('category')->orderBy('created_at', 'desc')->take(8)->get();
+    $productos = \App\Models\Product::with('category')->orderBy('created_at', 'desc')->paginate(12);
     return view('home', compact('productos'));
 })->name('home');
 

@@ -14,13 +14,7 @@
         @foreach($productos as $producto)
             <div class="col-md-4 mb-4">
                 <div class="card">
-                    @if($producto->image_url)
-                        <img src="{{ $producto->image_url }}" alt="{{ $producto->name }}" class="card-img-top" style="height: 200px; object-fit: cover;">
-                    @else
-                        <div class="card-img-top" style="height: 200px; background: linear-gradient(135deg, var(--color-rosa) 0%, var(--color-celeste) 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
-                            🐾
-                        </div>
-                    @endif
+                    <img src="{{ $producto->image_url ?? 'https://picsum.photos/seed/petcute' . $producto->id . '/400/200.jpg' }}" alt="{{ $producto->name }}" class="card-img-top" style="height: 200px; object-fit: cover;" onerror="this.src='https://picsum.photos/seed/petcute{{ $producto->id }}/400/200.jpg';">
                     <div class="card-body">
                         <h5 class="card-title">{{ $producto->name }}</h5>
                         <p class="card-text">{{ \Illuminate\Support\Str::limit($producto->description, 80) }}</p>
@@ -49,6 +43,24 @@
         <div class="alert alert-info text-center">
             <h4>No hay productos disponibles</h4>
             <p>Vuelve más tarde para ver nuevas colecciones</p>
+        </div>
+    @endif
+
+    <!-- Paginación -->
+    @if($productos->hasPages())
+        <div class="row justify-content-center mt-4">
+            <div class="col-auto">
+                {{ $productos->links() }}
+            </div>
+        </div>
+    @endif
+
+    <!-- Enlace a ver todos los productos -->
+    @if($productos->hasPages() || $productos->count() >= 12)
+        <div class="text-center mt-4">
+            <a href="{{ route('products.index') }}" class="btn btn-outline-primary">
+                📦 Ver Todos los Productos ({{ $productos->total() }} disponibles)
+            </a>
         </div>
     @endif
 </div>
