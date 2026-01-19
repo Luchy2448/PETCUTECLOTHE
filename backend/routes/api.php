@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +40,11 @@ use App\Http\Controllers\ProductController;
 // Permite crear una cuenta nueva en el sistema
 // Analogía: Es como el "mostrador de recepción" que registra nuevos visitantes
 Route::post('/register', [AuthController::class, 'register']);
+
+// 🔧 OBTENER TOKEN DE PRUEBA (solo desarrollo)
+//
+// Endpoint auxiliar para obtener rápidamente un token durante el testing
+Route::get('/token/test', [AuthController::class, 'getTokenForTesting']);
 
 // 🔑 INICIAR sesión (login)
 //
@@ -111,6 +117,44 @@ Route::get('/products', [ProductController::class, 'index']);
 // SIN necesidad de iniciar sesión.
 // Analogía: Es como "leer la etiqueta" de un producto en el escaparate
 Route::get('/products/{id}', [ProductController::class, 'show']);
+
+/*
+|--------------------------------------------------------------------------
+| 🛒 RUTAS DEL CARRITO (CON autenticación)
+|--------------------------------------------------------------------------
+|
+| Estas rutas manejan todas las operaciones del carrito de compras.
+| Todas requieren que el usuario esté autenticado.
+|
+| Analogía: Es como el "carrito de supermercado" virtual
+| donde guardas los productos que quieres comprar.
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    // 📋 VER mi carrito
+    // GET /api/cart → Obtener todos los items del carrito
+    Route::get('/cart', [CartController::class, 'index']);
+    
+    // ➕ AGREGAR producto al carrito
+    // POST /api/cart → Agregar nuevo producto o incrementar cantidad
+    Route::post('/cart', [CartController::class, 'store']);
+    
+    // ✏️ ACTUALIZAR cantidad de un item
+    // PUT /api/cart/{id} → Modificar cantidad de un producto específico
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+    
+    // 🗑️ ELIMINAR item específico
+    // DELETE /api/cart/{id} → Eliminar un producto del carrito
+    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+    
+    // 🗑️ VACIAR carrito completo
+    // DELETE /api/cart → Eliminar todos los productos del carrito
+    Route::delete('/cart', [CartController::class, 'clear']);
+    
+    // 💰 CALCULAR total del carrito
+    // POST /api/cart/calculate → Obtener subtotal y total
+    Route::post('/cart/calculate', [CartController::class, 'calculate']);
+});
 
 /*
 |--------------------------------------------------------------------------
