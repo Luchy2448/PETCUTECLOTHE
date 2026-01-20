@@ -57,6 +57,11 @@ Route::middleware(['auth'])->group(function () {
     
     // 🧹 Vaciar carrito completo
     Route::delete('/cart', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
+    
+    // 💳 Checkout (ETAPA 3 - Próximamente)
+    Route::get('/checkout', function() {
+        return view('checkout.coming-soon');
+    })->name('checkout');
 });
 
 Route::get('/products/{id}', function($id) {
