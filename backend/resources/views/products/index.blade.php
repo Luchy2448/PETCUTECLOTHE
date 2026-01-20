@@ -30,9 +30,13 @@
         @foreach($productos as $producto)
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
-                    <img src="{{ $producto->image_url ?? 'https://picsum.photos/seed/petcute' . $producto->id . '/400/200.jpg' }}" alt="{{ $producto->name }}" class="card-img-top" style="height:200px; object-fit: cover;" onerror="this.src='https://picsum.photos/seed/petcute{{ $producto->id }}/400/200.jpg';">
+                    <a href="{{ route('products.show', $producto->id) }}" class="text-decoration-none">
+                        <img src="{{ $producto->image_url ?? 'https://picsum.photos/seed/petcute' . $producto->id . '/400/200.jpg' }}" alt="{{ $producto->name }}" class="card-img-top" style="height:200px; object-fit: cover; cursor: pointer; transition: transform 0.2s;" onerror="this.src='https://picsum.photos/seed/petcute{{ $producto->id }}/400/200.jpg';" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
+                    </a>
                     <div class="card-body">
-                        <h5 class="card-title">{{ $producto->name }}</h5>
+                        <a href="{{ route('products.show', $producto->id) }}" class="text-decoration-none">
+                            <h5 class="card-title text-dark">{{ $producto->name }}</h5>
+                        </a>
                         <p class="card-text">{{ Str::limit($producto->description, 80) }}</p>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             @if($producto->category)
@@ -48,7 +52,9 @@
                             <span class="talla-badge">Talla {{ ['XS','S','M','L','XL'][$producto->size - 1] }}</span>
                             <span class="price">ARS {{ number_format($producto->price, 0, ',', '.') }}</span>
                         </div>
-                        <a href="{{ route('products.show', $producto->id) }}" class="btn btn-primary w-100 mt-3">Ver Detalles</a>
+                        <button onclick="addToCart({{ $producto->id }})" class="btn btn-success w-100 mt-3" {{ $producto->stock > 0 ? '' : 'disabled' }}>
+                            🛒 Añadir al Carrito
+                        </button>
                     </div>
                 </div>
             </div>

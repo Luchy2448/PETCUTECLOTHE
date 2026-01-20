@@ -41,6 +41,24 @@ Route::get('/products', function() {
     return view('products.index', compact('productos'));
 })->name('products.index');
 
+// 🛒 RUTAS DEL CARRITO (Web)
+Route::middleware(['auth'])->group(function () {
+    // 📋 Ver mi carrito
+    Route::get('/cart', [App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
+    
+    // ➕ Agregar producto al carrito
+    Route::post('/cart', [App\Http\Controllers\CartController::class, 'store'])->name('cart.store');
+    
+    // ✏️ Actualizar cantidad
+    Route::put('/cart/{id}', [App\Http\Controllers\CartController::class, 'update'])->name('cart.update');
+    
+    // 🗑️ Eliminar item
+    Route::delete('/cart/{id}', [App\Http\Controllers\CartController::class, 'destroy'])->name('cart.destroy');
+    
+    // 🧹 Vaciar carrito completo
+    Route::delete('/cart', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
+});
+
 Route::get('/products/{id}', function($id) {
     $producto = \App\Models\Product::with('category')->find($id);
     if (!$producto) {

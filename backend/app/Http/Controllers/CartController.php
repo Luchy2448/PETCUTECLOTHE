@@ -6,6 +6,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 
 /**
  * 🛒 CartController - Gestión del Carrito de Compras
@@ -21,14 +22,42 @@ use Illuminate\Http\JsonResponse;
 class CartController extends Controller
 {
     /**
-     * 📋 MÉTODO: index - Ver mi carrito
+     * 📋 MÉTODO: index - Ver mi carrito (Web)
      *
-     * Devuelve todos los items del carrito del usuario autenticado
+     * Devuelve la vista del carrito del usuario autenticado
+     *
+     * Ruta: GET /cart
+     * Requiere: Sesión de autenticación web
+     */
+    public function index()
+    {
+        try {
+            // Obtener los items del carrito con sus productos
+            $cartItems = CartItem::with('product')->where('user_id', auth()->id())->get();
+            
+            // Calcular totales
+            $total = $cartItems->sum(function ($item) {
+                return $item->product->price * $item->quantity;
+            });
+            
+            $itemCount = $cartItems->sum('quantity');
+
+            return view('cart.index', compact('cartItems', 'total', 'itemCount'));
+            
+        } catch (\Exception $e) {
+            return redirect()->route('home')->with('error', 'Error al cargar el carrito: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 📋 MÉTODO: apiIndex - Ver mi carrito (API)
+     *
+     * Devuelve todos los items del carrito del usuario autenticado en formato JSON
      *
      * Ruta: GET /api/cart
      * Requiere: Token de autenticación
      */
-    public function index(): JsonResponse
+    public function apiIndex(): JsonResponse
     {
         try {
             // Obtener los items del carrito con sus productos
@@ -59,14 +88,14 @@ class CartController extends Controller
     }
 
     /**
-     * ➕ MÉTODO: store - Agregar producto al carrito
+     * ➕ MÉTODO: store - Agregar producto al carrito (Web)
      *
-     * Agrega un nuevo producto al carrito o incrementa cantidad si ya existe
+     * Agrega un producto al carrito y redirige al carrito
      *
-     * Ruta: POST /api/cart
-     * Requiere: Token de autenticación
+     * Ruta: POST /cart
+     * Requiere: Usuario autenticado
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
         try {
             // Validar datos de entrada
@@ -78,19 +107,12 @@ class CartController extends Controller
             // Verificar que el producto exista y tenga stock
             $product = Product::find($validated['product_id']);
             if (!$product) {
-                return response()->json([
-                    'error' => 'Producto no encontrado',
-                    'message' => 'El producto solicitado no existe'
-                ], 404);
+                return redirect()->back()->with('error', 'Producto no encontrado');
             }
 
             // Verificar stock disponible
             if ($product->stock < $validated['quantity']) {
-                return response()->json([
-                    'error' => 'Stock insuficiente',
-                    'message' => 'Solo hay ' . $product->stock . ' unidades disponibles',
-                    'available_stock' => $product->stock
-                ], 400);
+                return redirect()->back()->with('error', 'Stock insuficiente. Solo hay ' . $product->stock . ' unidades disponibles.');
             }
 
             // Buscar si el producto ya está en el carrito
@@ -104,36 +126,24 @@ class CartController extends Controller
                 
                 // Verificar stock nuevamente
                 if ($product->stock < $newQuantity) {
-                    return response()->json([
-                        'error' => 'Stock insuficiente',
-                        'message' => 'Solo hay ' . $product->stock . ' unidades disponibles. Ya tienes ' . $existingItem->quantity . ' en el carrito.',
-                        'available_stock' => $product->stock,
-                        'current_quantity' => $existingItem->quantity
-                    ], 400);
+                    return redirect()->back()->with('error', 'Stock insuficiente. Solo hay ' . $product->stock . ' unidades disponibles. Ya tienes ' . $existingItem->quantity . ' en el carrito.');
                 }
 
                 $existingItem->update(['quantity' => $newQuantity]);
-                $cartItem = $existingItem;
+                return redirect()->route('cart.index')->with('success', 'Cantidad actualizada exitosamente.');
             } else {
                 // Si no existe, crear nuevo item
-                $cartItem = CartItem::create([
+                CartItem::create([
                     'user_id' => auth()->id(),
                     'product_id' => $validated['product_id'],
                     'quantity' => $validated['quantity']
                 ]);
             }
 
-            return response()->json([
-                'message' => 'Producto agregado al carrito exitosamente',
-                'cart_item' => $cartItem->load('product'),
-                'cart_count' => CartItem::where('user_id', auth()->id())->sum('quantity')
-            ], 201);
+            return redirect()->route('cart.index')->with('success', '¡Producto agregado al carrito exitosamente!');
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al agregar producto al carrito',
-                'message' => $e->getMessage()
-            ], 500);
+            return redirect()->back()->with('error', 'Error al agregar el producto al carrito: ' . $e->getMessage());
         }
     }
 

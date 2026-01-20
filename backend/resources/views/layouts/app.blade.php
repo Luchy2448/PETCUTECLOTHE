@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>PET CUTE CLOTHES - Administrar Productos</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -401,6 +402,12 @@
                             <a class="nav-link" href="/admin/products">Admin</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link position-relative" href="/cart">
+                                🛒 Carrito
+                                <span class="cart-badge badge bg-danger text-white rounded-circle" style="position: absolute; top: -5px; right: -10px; font-size: 0.7rem; padding: 2px 5px; min-width: 18px; text-align: center; display: none;">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <form action="/logout" method="POST" style="display: inline; margin: 0;">
                                 @csrf
                                 <button type="submit" class="logout-btn">
@@ -435,5 +442,116 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Cart Functionality -->
+    <script>
+        // 🛒 Función para agregar producto al carrito
+        function addToCart(productId) {
+            // Deshabilitar el botón temporalmente
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '🔄 Agregando...';
+            
+            // Realizar la petición a la RUTA WEB (usando formulario con CSRF)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/cart';
+            
+            // Agregar CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+            
+            // Agregar product_id
+            const productIdInput = document.createElement('input');
+            productIdInput.type = 'hidden';
+            productIdInput.name = 'product_id';
+            productIdInput.value = productId;
+            form.appendChild(productIdInput);
+            
+            // Agregar quantity
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'hidden';
+            quantityInput.name = 'quantity';
+            quantityInput.value = 1;
+            form.appendChild(quantityInput);
+            
+            // Enviar formulario
+            document.body.appendChild(form);
+            form.submit();
+        }
+        
+        // 🔔 Función para mostrar notificaciones
+        function showNotification(title, message, type) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'alert-success' : 'alert-danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.innerHTML = `
+                <button type="button" class="btn-close" data-bs-dismiss="alert">&times;</button>
+                <strong>${title}</strong> ${message}
+            `;
+            
+            // Agregar al DOM
+            document.body.appendChild(notification);
+            
+            // Auto-eliminar después de 3 segundos
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // 📊 Función para actualizar el contador del carrito
+        function updateCartCount() {
+            fetch('/cart', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // Si redirige a login, el usuario no está autenticado
+                    return null;
+                }
+                return response.text();
+            })
+            .then(html => {
+                if (!html) return;
+                
+                // Crear un parser temporal para extraer datos
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Buscar el contador de items en el carrito
+                const itemCountElement = doc.querySelector('.cart-item-count');
+                const cartBadge = document.querySelector('.cart-badge');
+                
+                if (itemCountElement) {
+                    const itemCount = itemCountElement.textContent || 0;
+                    // Actualizar badge del carrito en el navbar si existe
+                    if (cartBadge) {
+                        cartBadge.textContent = itemCount;
+                        cartBadge.style.display = itemCount > 0 ? 'inline-block' : 'none';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener el carrito:', error);
+            });
+        }
+        
+        // 🔄 Inicializar el contador del carrito al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+        });
+    </script>
 </body>
 </html>

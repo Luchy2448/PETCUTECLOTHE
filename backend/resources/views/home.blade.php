@@ -32,7 +32,18 @@
                             <span class="talla-badge">Talla {{ ['XS','S','M','L','XL'][$producto->size - 1] }}</span>
                             <span class="price">ARS {{ number_format($producto->price, 0, ',', '.') }}</span>
                         </div>
-                        <a href="{{ route('products.show', $producto->id) }}" class="btn btn-primary w-100 mt-3">Ver Detalles</a>
+                        @auth
+                            @if($producto->stock > 0)
+                                <button onclick="addToCart({{ $producto->id }})" class="btn btn-primary w-100 mt-2">
+                                    🛒 Añadir al Carrito
+                                </button>
+                            @else
+                                <button class="btn btn-secondary w-100 mt-2" disabled>
+                                    📦 Producto Agotado
+                                </button>
+                            @endif
+                        @endauth
+                        <a href="{{ route('products.show', $producto->id) }}" class="btn btn-outline-primary w-100 mt-2">Ver Detalles</a>
                     </div>
                 </div>
             </div>

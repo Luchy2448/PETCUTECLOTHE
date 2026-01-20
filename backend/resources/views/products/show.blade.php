@@ -56,15 +56,17 @@
                         <a href="{{ route('products.index') }}" class="btn btn-secondary">
                             ← Volver a Productos
                         </a>
-                        @if($producto->stock > 0)
-                            <button class="btn btn-primary" disabled>
-                                🛒 Añadir al Carrito (Próximamente)
-                            </button>
-                        @else
-                            <button class="btn btn-secondary" disabled>
-                                📦 Producto Agotado
-                            </button>
-                        @endif
+                        @auth
+                            @if($producto->stock > 0)
+                                <button onclick="addToCart({{ $producto->id }})" class="btn btn-primary">
+                                    🛒 Añadir al Carrito
+                                </button>
+                            @else
+                                <button class="btn btn-secondary" disabled>
+                                    📦 Producto Agotado
+                                </button>
+                            @endif
+                        @endauth
                     </div>
                 </div>
             </div>

@@ -133,7 +133,7 @@ Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::middleware('auth:sanctum')->group(function () {
     // 📋 VER mi carrito
     // GET /api/cart → Obtener todos los items del carrito
-    Route::get('/cart', [CartController::class, 'index']);
+    Route::get('/cart', [CartController::class, 'apiIndex']);
     
     // ➕ AGREGAR producto al carrito
     // POST /api/cart → Agregar nuevo producto o incrementar cantidad
