@@ -127,21 +127,38 @@
                 return;
             }
 
-            // Usamos un formulario oculto o fetch para actualizar
-            // Nota: Asegúrate de que la ruta /cart/{id} acepte PUT en tu web.php
-            fetch(`/cart/${itemId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        quantity: newQuantity
-                    })
-                })
-                .then(response => {
-                    if (response.ok) window.location.reload();
-                });
+// Usamos un formulario oculto para actualizar (redirección completa)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/cart/${itemId}`;
+            
+            // Agregar CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+            
+            // Agregar método PUT
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'PUT';
+            form.appendChild(methodInput);
+            
+            // Agregar quantity
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'hidden';
+            quantityInput.name = 'quantity';
+            quantityInput.value = newQuantity;
+            form.appendChild(quantityInput);
+            
+            // Enviar formulario
+            document.body.appendChild(form);
+            form.submit();
         }
     </script>
 @endsection

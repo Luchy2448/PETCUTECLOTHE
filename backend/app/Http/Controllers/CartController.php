@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 🛒 CartController - Gestión del Carrito de Compras
@@ -110,7 +111,12 @@ class CartController extends Controller
                 return redirect()->back()->with('error', 'Producto no encontrado');
             }
 
-            // Verificar stock disponible
+            // Verificar stock disponible - IMPEDIR agregar si stock es 0
+            if ($product->stock == 0) {
+                return redirect()->back()->with('error', 'Producto agotado. No hay unidades disponibles.');
+            }
+            
+            // Verificar stock disponible para cantidad solicitada
             if ($product->stock < $validated['quantity']) {
                 return redirect()->back()->with('error', 'Stock insuficiente. Solo hay ' . $product->stock . ' unidades disponibles.');
             }
@@ -152,10 +158,50 @@ class CartController extends Controller
      *
      * Modifica la cantidad de un producto específico en el carrito
      *
+     * Ruta: PUT /cart/{id}
+     * Requiere: Sesión de autenticación web
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            // Validar datos
+            $validated = $request->validate([
+                'quantity' => 'required|integer|min:1|max:10'
+            ]);
+
+            // Buscar el item en el carrito del usuario
+            $cartItem = CartItem::where('user_id', auth()->id())
+                ->where('id', $id)
+                ->first();
+
+            if (!$cartItem) {
+                return redirect()->route('cart.index')->with('error', 'Item no encontrado en tu carrito');
+            }
+
+            // Verificar stock
+            if ($cartItem->product->stock < $validated['quantity']) {
+                return redirect()->route('cart.index')->with('error', 'Stock insuficiente. Solo hay ' . $cartItem->product->stock . ' unidades disponibles');
+            }
+
+            // Actualizar cantidad
+            $cartItem->update(['quantity' => $validated['quantity']]);
+
+            return redirect()->route('cart.index')->with('success', 'Cantidad actualizada exitosamente');
+
+        } catch (\Exception $e) {
+            return redirect()->route('cart.index')->with('error', 'Error al actualizar cantidad: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✏️ MÉTODO: apiUpdate - Actualizar cantidad de un item (API)
+     *
+     * Modifica la cantidad de un producto específico en el carrito
+     *
      * Ruta: PUT /api/cart/{id}
      * Requiere: Token de autenticación
      */
-    public function update(Request $request, $id): JsonResponse
+    public function apiUpdate(Request $request, $id): JsonResponse
     {
         try {
             // Validar datos
@@ -201,14 +247,44 @@ class CartController extends Controller
     }
 
     /**
-     * 🗑️ MÉTODO: destroy - Eliminar item del carrito
+     * 🗑️ MÉTODO: destroy - Eliminar item del carrito (Web)
+     *
+     * Elimina un producto específico del carrito y redirige
+     *
+     * Ruta: DELETE /cart/{id}
+     * Requiere: Sesión de autenticación web
+     */
+    public function destroy($id)
+    {
+        try {
+            // Buscar el item en el carrito del usuario
+            $cartItem = CartItem::where('user_id', auth()->id())
+                ->where('id', $id)
+                ->first();
+
+            if (!$cartItem) {
+                return redirect()->route('cart.index')->with('error', 'Item no encontrado en tu carrito');
+            }
+
+            // Eliminar el item
+            $cartItem->delete();
+
+            return redirect()->route('cart.index')->with('success', 'Producto eliminado del carrito exitosamente');
+
+        } catch (\Exception $e) {
+            return redirect()->route('cart.index')->with('error', 'Error al eliminar producto del carrito: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 🗑️ MÉTODO: apiDestroy - Eliminar item del carrito (API)
      *
      * Elimina un producto específico del carrito
      *
      * Ruta: DELETE /api/cart/{id}
      * Requiere: Token de autenticación
      */
-    public function destroy($id): JsonResponse
+    public function apiDestroy($id): JsonResponse
     {
         try {
             // Buscar el item en el carrito del usuario
@@ -240,14 +316,40 @@ class CartController extends Controller
     }
 
     /**
-     * 🗑️ MÉTODO: clear - Vaciar carrito completo
+     * 🗑️ MÉTODO: clear - Vaciar carrito completo (Web)
+     *
+     * Elimina todos los productos del carrito del usuario
+     *
+     * Ruta: DELETE /cart
+     * Requiere: Sesión de autenticación web
+     */
+    public function clear(Request $request)
+    {
+        try {
+            // Verificar que el método sea POST
+            if ($request->method() !== 'POST') {
+                return redirect()->route('cart.index')->with('error', 'Método no permitido');
+            }
+
+            // Eliminar todos los items del carrito del usuario
+            $deletedCount = CartItem::where('user_id', auth()->id())->delete();
+
+            return redirect()->route('cart.index')->with('success', "Carrito vaciado exitosamente ($deletedCount productos eliminados)");
+
+        } catch (\Exception $e) {
+            return redirect()->route('cart.index')->with('error', 'Error al vaciar el carrito: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 🗑️ MÉTODO: apiClear - Vaciar carrito completo (API)
      *
      * Elimina todos los productos del carrito del usuario
      *
      * Ruta: DELETE /api/cart
      * Requiere: Token de autenticación
      */
-    public function clear(): JsonResponse
+    public function apiClear(): JsonResponse
     {
         try {
             // Eliminar todos los items del carrito del usuario

@@ -141,15 +141,15 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // ✏️ ACTUALIZAR cantidad de un item
     // PUT /api/cart/{id} → Modificar cantidad de un producto específico
-    Route::put('/cart/{id}', [CartController::class, 'update']);
+    Route::put('/cart/{id}', [CartController::class, 'apiUpdate']);
     
     // 🗑️ ELIMINAR item específico
     // DELETE /api/cart/{id} → Eliminar un producto del carrito
-    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+    Route::delete('/cart/{id}', [CartController::class, 'apiDestroy']);
     
     // 🗑️ VACIAR carrito completo
     // DELETE /api/cart → Eliminar todos los productos del carrito
-    Route::delete('/cart', [CartController::class, 'clear']);
+    Route::delete('/cart', [CartController::class, 'apiClear']);
     
     // 💰 CALCULAR total del carrito
     // POST /api/cart/calculate → Obtener subtotal y total

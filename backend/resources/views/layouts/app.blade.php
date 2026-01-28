@@ -397,6 +397,11 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/register">Registro</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/cart">
+                                🛒 Carrito
+                            </a>
+                        </li>
                     @else
                         <li class="nav-item">
                             <a class="nav-link" href="/admin/products">Admin</a>

@@ -56,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/cart/{id}', [App\Http\Controllers\CartController::class, 'destroy'])->name('cart.destroy');
     
     // 🧹 Vaciar carrito completo
-    Route::delete('/cart', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
+    Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
     
     // 💳 Checkout (ETAPA 3 - Próximamente)
     Route::get('/checkout', function() {
