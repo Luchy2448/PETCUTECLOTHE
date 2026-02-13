@@ -6,195 +6,350 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\SearchController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 |
-| Aquí definimos todas las RUTAS (direcciones) de nuestra API.
+| Aquí definimos todas las rutas de la API REST del sistema.
+| Incluyen autenticación, productos, carrito, pedidos y pagos.
 |
-| Piensa en esto como las "CALLES Y AVENIDAS" del sitio web.
-| Cada ruta es una dirección donde se puede acceder a algo.
-|
-| Ejemplos:
-| - /api/products → Ir al catálogo de productos
-| - /api/login    → Ir a la página de inicio de sesión
-| - /api/register  → Ir a la página de registro
 */
 
 /*
 |--------------------------------------------------------------------------
-| RUTAS PÚBLICAS (SIN autenticación)
+| 🔓 RUTAS PÚBLICAS (Sin autenticación)
 |--------------------------------------------------------------------------
 |
-| Estas rutas pueden ser accedidas por CUALQUIERA,
-| sin necesidad de tener una cuenta o token.
-|
-| Analogía: Son como el "JARDÍN PÚBLICO" de una casa
-| donde puede entrar cualquiera.
+| Estas rutas pueden ser accedidas sin necesidad de token.
 */
 
-// 📝 REGISTRAR nuevo usuario
-//
-// Permite crear una cuenta nueva en el sistema
-// Analogía: Es como el "mostrador de recepción" que registra nuevos visitantes
-Route::post('/register', [AuthController::class, 'register']);
+// 📝 Autenticación
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
 
-// 🔧 OBTENER TOKEN DE PRUEBA (solo desarrollo)
-//
-// Endpoint auxiliar para obtener rápidamente un token durante el testing
-Route::get('/token/test', [AuthController::class, 'getTokenForTesting']);
-
-// 🔑 INICIAR sesión (login)
-//
-// Permite que un usuario ya registrado inicie sesión
-// Devuelve un token para acceder a rutas protegidas
-// Analogía: Es como el "guardia de seguridad" que verifica tu identidad
-Route::post('/login', [AuthController::class, 'login']);
-
-/*
-|--------------------------------------------------------------------------
-| RUTAS PROTEGIDAS (CON autenticación)
-|--------------------------------------------------------------------------
-|
-| Estas rutas SOLO pueden ser accedidas por usuarios AUTENTICADOS
-| (que tienen un token válido).
-|
-| El middleware 'auth:sanctum' verifica que el usuario tenga
-| un token válido antes de dejar pasar.
-|
-| Analogía: Son como el "INTERIOR PRIVADO" de una casa
-| donde solo pueden entrar personas con llave (token).
-*/
-
-Route::middleware('auth:sanctum')->group(function () {
-    // 🚪 CERRAR sesión (logout)
-    //
-    // Permite al usuario cerrar sesión
-    // Revoca el token que estaba usando
-    // Analogía: Es como "devolver la llave" cuando sales del edificio
-    Route::post('/logout', [AuthController::class, 'logout']);
-
-    // 👤 VER mi usuario (me)
-    //
-    // Devuelve la información del usuario autenticado
-    // Analogía: Es como "mirar mi carnet" para ver mis datos
-    Route::get('/user', [AuthController::class, 'me']);
-
-    // 📋 VER todas las categorías
-    //
-    // Devuelve la lista completa de categorías
-    // Requiere: Estar autenticado (tener token)
-    // Analogía: Ver todas las carpetas de organización
-    Route::apiResource('categories', CategoryController::class);
-
-    // 📋 VER todos los productos (PÚBLICO también)
-    //
-    // Aunque está dentro del grupo de autenticación,
-    // vamos a permitir ver productos sin token también.
-    // Requiere: Estar autenticado (tener token) para operar con productos
-    Route::apiResource('products', ProductController::class);
+// 📊 Estadísticas públicas
+Route::get('/stats/products', function() {
+    return response()->json([
+        'total_products' => \App\Models\Product::count(),
+        'in_stock' => \App\Models\Product::where('stock', '>', 0)->count(),
+        'categories' => \App\Models\Category::withCount('products')->get(),
+    ]);
 });
 
-/*
-|--------------------------------------------------------------------------
-| RUTAS ESPECIALES (Fuera del middleware)
-|--------------------------------------------------------------------------
-*/
+Route::get('/stats/orders', function() {
+    return response()->json([
+        'total_orders' => \App\Models\Order::count(),
+        'pending_orders' => \App\Models\Order::where('status', 'pending')->count(),
+        'completed_orders' => \App\Models\Order::where('status', 'delivered')->count(),
+        'revenue' => \App\Models\Order::where('status', 'delivered')->sum('total'),
+    ]);
+});
 
-// 📋 VER todos los productos (PÚBLICO - SIN token)
-//
-// Esta ruta permite ver el catálogo de productos
-// SIN necesidad de iniciar sesión.
-// Analogía: Es como el "escaparate de una tienda" donde cualquiera
-// puede mirar los productos, aunque no esté registrado.
+// 🔍 Búsqueda y filtros
+Route::get('/products/search', [SearchController::class, 'suggestions']);
+Route::get('/products/filter', [ProductController::class, 'filter']);
+Route::get('/products/category/{category}', [ProductController::class, 'byCategory']);
+
+// 📦 Catálogo de productos (público)
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{product}', [ProductController::class, 'show']);
 
-// 🔍 VER un producto específico (PÚBLICO - SIN token)
-//
-// Permite ver los detalles de UN solo producto
-// SIN necesidad de iniciar sesión.
-// Analogía: Es como "leer la etiqueta" de un producto en el escaparate
-Route::get('/products/{id}', [ProductController::class, 'show']);
+// 🏷️ Categorías públicas
+Route::get('/categories', function() {
+    return response()->json(\App\Models\Category::withCount('products')->get());
+});
+Route::get('/categories/{category}', function($category) {
+    $category = \App\Models\Category::with('products')->findOrFail($category);
+    return response()->json($category);
+});
+
+// 🪝 Webhooks (públicos pero seguros)
+Route::post('/webhook/mercadopago', [PaymentController::class, 'webhook']);
 
 /*
 |--------------------------------------------------------------------------
-| 🛒 RUTAS DEL CARRITO (CON autenticación)
+| 🔐 RUTAS PROTEGIDAS (Requieren autenticación)
 |--------------------------------------------------------------------------
 |
-| Estas rutas manejan todas las operaciones del carrito de compras.
-| Todas requieren que el usuario esté autenticado.
-|
-| Analogía: Es como el "carrito de supermercado" virtual
-| donde guardas los productos que quieres comprar.
+| Estas rutas requieren un token válido (Bearer Token).
+| El middleware 'auth:sanctum' verifica el token.
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    // 📋 VER mi carrito
-    // GET /api/cart → Obtener todos los items del carrito
-    Route::get('/cart', [CartController::class, 'apiIndex']);
     
-    // ➕ AGREGAR producto al carrito
-    // POST /api/cart → Agregar nuevo producto o incrementar cantidad
-    Route::post('/cart', [CartController::class, 'store']);
+    // 👤 Gestión de perfil
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     
-    // ✏️ ACTUALIZAR cantidad de un item
-    // PUT /api/cart/{id} → Modificar cantidad de un producto específico
-    Route::put('/cart/{id}', [CartController::class, 'apiUpdate']);
+    // 🛒 Carrito de compras
+    Route::prefix('cart')->name('cart.')->group(function () {
+        Route::get('/', [CartController::class, 'apiIndex'])->name('index');
+        Route::post('/add', [CartController::class, 'apiAdd'])->name('add');
+        Route::patch('/{item}', [CartController::class, 'apiUpdate'])->name('update');
+        Route::delete('/{item}', [CartController::class, 'apiDestroy'])->name('destroy');
+        Route::delete('/', [CartController::class, 'apiClear'])->name('clear');
+        Route::post('/calculate', [CartController::class, 'calculate'])->name('calculate');
+    });
     
-    // 🗑️ ELIMINAR item específico
-    // DELETE /api/cart/{id} → Eliminar un producto del carrito
-    Route::delete('/cart/{id}', [CartController::class, 'apiDestroy']);
+    // 💳 Pagos
+    Route::prefix('payments')->name('payments.')->group(function () {
+        Route::post('/create', [CheckoutController::class, 'apiCreate'])->name('create');
+        Route::get('/{payment}', [PaymentController::class, 'apiShow'])->name('show');
+        Route::get('/order/{order}/latest', [PaymentController::class, 'latestByOrder'])->name('latest.by_order');
+    });
     
-    // 🗑️ VACIAR carrito completo
-    // DELETE /api/cart → Eliminar todos los productos del carrito
-    Route::delete('/cart', [CartController::class, 'apiClear']);
+    // 📋 Órdenes del usuario
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'apiIndex'])->name('index');
+        Route::get('/{order}', [OrderController::class, 'apiShow'])->name('show');
+        Route::post('/', [OrderController::class, 'apiStore'])->name('store');
+        Route::patch('/{order}/cancel', [OrderController::class, 'apiCancel'])->name('cancel');
+        Route::get('/{order}/tracking', [OrderController::class, 'tracking'])->name('tracking');
+    });
     
-    // 💰 CALCULAR total del carrito
-    // POST /api/cart/calculate → Obtener subtotal y total
-    Route::post('/cart/calculate', [CartController::class, 'calculate']);
+    // 🛍️ Gestión de productos (CRUD completo)
+    Route::apiResource('products', ProductController::class);
+    
+    // 🏷️ Gestión de categorías (CRUD completo)
+    Route::apiResource('categories', CategoryController::class);
+    
+    // 📈 Estadísticas del usuario
+    Route::get('/stats/user', function() {
+        $user = auth()->user();
+        return response()->json([
+            'total_orders' => \App\Models\Order::where('user_id', $user->id)->count(),
+            'total_spent' => \App\Models\Order::where('user_id', $user->id)->where('status', 'delivered')->sum('total'),
+            'pending_orders' => \App\Models\Order::where('user_id', $user->id)->where('status', 'pending')->count(),
+            'cart_items' => \App\Models\CartItem::where('user_id', $user->id)->count(),
+            'last_order' => \App\Models\Order::where('user_id', $user->id)->latest()->first(),
+        ]);
+    });
+    
+    // 🔄 Historial de búsqueda
+    Route::get('/search/history', [SearchController::class, 'history']);
+    Route::post('/search/save', [SearchController::class, 'saveSearch']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| NOTAS IMPORTANTES
+| 🛡️ RUTAS DE ADMINISTRACIÓN (Solo admin)
 |--------------------------------------------------------------------------
 |
-| 1. Route::post() = Método POST para ENVIAR datos (crear, login, etc.)
-| 2. Route::get() = Método GET para OBTENER datos (ver, listar)
-| 3. Route::put() = Método PUT para ACTUALIZAR datos completos
-| 4. Route::delete() = Método DELETE para BORRAR datos
-| 5. Route::apiResource() = Crea automáticamente rutas CRUD:
-|    - GET    /api/products → index (listar)
-|    - POST   /api/products → store (crear)
-|    - GET    /api/products/{id} → show (ver uno)
-|    - PUT/PATCH /api/products/{id} → update (actualizar)
-|    - DELETE /api/products/{id} → destroy (borrar)
+| Estas rutas requieren autenticación y rol de administrador.
+*/
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    
+    // 👥 Gestión de usuarios
+    Route::get('/users', function() {
+        return response()->json(\App\Models\User::withCount('orders')->get());
+    });
+    Route::get('/users/{user}', function($user) {
+        $user = \App\Models\User::with(['orders', 'cartItems'])->findOrFail($user);
+        return response()->json($user);
+    });
+    
+    // 📊 Estadísticas avanzadas
+    Route::get('/stats/dashboard', function() {
+        return response()->json([
+            'total_users' => \App\Models\User::count(),
+            'total_products' => \App\Models\Product::count(),
+            'total_orders' => \App\Models\Order::count(),
+            'total_revenue' => \App\Models\Order::where('status', 'delivered')->sum('total'),
+            'monthly_revenue' => \App\Models\Order::where('status', 'delivered')
+                                           ->where('created_at', '>=', now()->subMonth())
+                                           ->sum('total'),
+            'pending_orders' => \App\Models\Order::where('status', 'pending')->count(),
+            'low_stock_products' => \App\Models\Product::where('stock', '<', 5)->count(),
+        ]);
+    });
+    
+    // 📋 Gestión completa de órdenes
+    Route::get('/orders', function(Request $request) {
+        $query = \App\Models\Order::with(['user', 'items.product', 'payments']);
+        
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->date_from) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        
+        if ($request->date_to) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        return response()->json($query->orderBy('created_at', 'desc')->paginate(20));
+    });
+    
+    Route::patch('/orders/{order}/status', function(Request $request, $order) {
+        $order = \App\Models\Order::findOrFail($order);
+        
+        $request->validate([
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
+            'tracking_number' => 'nullable|string|max:255',
+        ]);
+        
+        $order->update([
+            'status' => $request->status,
+            'tracking_number' => $request->tracking_number,
+        ]);
+        
+        return response()->json(['message' => 'Estado actualizado', 'order' => $order]);
+    });
+    
+    // 📈 Reportes
+    Route::get('/reports/sales', function(Request $request) {
+        $period = $request->get('period', 'month');
+        
+        $startDate = match ($period) {
+            'week' => now()->subWeek(),
+            'month' => now()->subMonth(),
+            'quarter' => now()->subQuarter(),
+            'year' => now()->subYear(),
+            default => now()->subMonth(),
+        };
+        
+        $sales = \App\Models\Order::selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total) as revenue')
+                                ->where('created_at', '>=', $startDate)
+                                ->where('status', 'delivered')
+                                ->groupBy('date')
+                                ->orderBy('date')
+                                ->get();
+        
+        return response()->json($sales);
+    });
+    
+    // 🏆 Productos más vendidos
+    Route::get('/reports/top-products', function() {
+        $products = \App\Models\OrderItem::select('product_id', 
+                'COUNT(*) as orders_count',
+                'SUM(quantity) as total_quantity',
+                'SUM(quantity * price) as total_revenue')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', 'delivered')
+            ->where('orders.created_at', '>=', now()->subMonth())
+            ->groupBy('product_id')
+            ->orderByDesc('total_revenue')
+            ->limit(10)
+            ->with('product')
+            ->get();
+        
+        return response()->json($products);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| 🧪 RUTAS DE DESARROLLO (Solo en entorno local)
+|--------------------------------------------------------------------------
+*/
+
+if (app()->environment('local')) {
+    // 🔧 Token de prueba
+    Route::get('/dev/token', [AuthController::class, 'getTokenForTesting']);
+    
+    // 📊 Información del sistema
+    Route::get('/dev/info', function() {
+        return response()->json([
+            'app_name' => config('app.name'),
+            'environment' => app()->environment(),
+            'debug' => config('app.debug'),
+            'timezone' => config('app.timezone'),
+            'locale' => config('app.locale'),
+            'database_connection' => config('database.default'),
+            'cache_driver' => config('cache.default'),
+            'session_driver' => config('session.driver'),
+            'queue_connection' => config('queue.default'),
+            'mail_mailer' => config('mail.default'),
+            'mercado_pago_mode' => config('services.mercadopago.mode', 'not_configured'),
+            'php_version' => PHP_VERSION,
+            'laravel_version' => app()->version(),
+        ]);
+    });
+    
+    // 🔄 Limpiar caché
+    Route::post('/dev/cache/clear', function() {
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+        
+        return response()->json(['message' => 'Caché limpiada correctamente']);
+    });
+    
+    // 📦 Seeders de prueba
+    Route::post('/dev/seed', function() {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'DatabaseSeeder']);
+        return response()->json(['message' => 'Datos de prueba creados']);
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| 📚 DOCUMENTACIÓN DE ENDPOINTS
+|--------------------------------------------------------------------------
 |
-| 6. middleware('auth:sanctum') = Verifica el token antes de permitir acceso
-|    - Si el token es válido → Deja pasar
-|    - Si el token es inválido → Devuelve error 401 (Unauthorized)
-|    - Si el token expiró → Devuelve error 401 (Unauthorized)
+| Formatos de respuesta estándar:
 |
-| 7. Rutas protegidas requieren el header:
-|    Authorization: Bearer 1|token_del_usuario
+| ✅ Respuesta exitosa:
+| {
+|     "success": true,
+|     "data": {...},
+|     "message": "Operación completada"
+| }
 |
-| Ejemplos de uso:
-| - Registrar usuario:
-|   POST http://localhost:8000/api/register
-|   Body: {"name": "Ana", "email": "ana@test.com", "password": "123456", "password_confirmation": "123456"}
+| ❌ Respuesta de error:
+| {
+|     "success": false,
+|     "error": "Mensaje de error",
+|     "code": "ERROR_CODE"
+| }
 |
-| - Login:
-|   POST http://localhost:8000/api/login
-|   Body: {"email": "ana@test.com", "password": "123456"}
+| 📄 Paginación:
+| {
+|     "data": [...],
+|     "current_page": 1,
+|     "per_page": 15,
+|     "total": 100,
+|     "last_page": 7
+| }
 |
-| - Ver productos (sin login):
-|   GET http://localhost:8000/api/products
+| 🔐 Autenticación:
+| Header: Authorization: Bearer {token}
 |
-| - Crear producto (con token):
-|   POST http://localhost:8000/api/products
-|   Headers: Authorization: Bearer 1|token_aleatorio_40_caracteres
-|   Body: {"name": "Suéter gatito", "price": 15000, "stock": 10, "size": 3, "category_id": 1, "image_url": "https://..."}
+| 📝 Ejemplos de uso:
+|
+| POST /api/auth/register
+| {
+|     "name": "Juan Pérez",
+|     "email": "juan@email.com",
+|     "password": "password123",
+|     "password_confirmation": "password123"
+| }
+|
+| POST /api/auth/login
+| {
+|     "email": "juan@email.com",
+|     "password": "password123"
+| }
+|
+| GET /api/products
+| Headers: Authorization: Bearer {token}
+|
+| POST /api/cart/add
+| Headers: Authorization: Bearer {token}
+| {
+|     "product_id": 1,
+|     "quantity": 2
+| }
 |
 */

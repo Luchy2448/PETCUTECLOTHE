@@ -74,12 +74,23 @@
 
                                     <div class="me-4 text-center">
                                         <div class="input-group input-group-sm" style="width: 120px;">
-                                            <button class="btn btn-outline-secondary"
-                                                onclick="updateQuantity({{ $item->id }}, {{ $item->quantity - 1 }})">➖</button>
+                                            {{-- Extraer variables para evitar problemas --}}
+                                            @php
+                                                $itemId = $item->id;
+                                                $currentQty = $item->quantity;
+                                            @endphp
+                                            
+                                            {{-- Botón de decrementar --}}
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                onclick="decrementQuantity('{{ $itemId }}', '{{ $currentQty }}')">➖</button>
+                                            
+                                            {{-- Input de cantidad --}}
                                             <input type="text" class="form-control text-center"
-                                                value="{{ $item->quantity }}" readonly>
-                                            <button class="btn btn-outline-secondary"
-                                                onclick="updateQuantity({{ $item->id }}, {{ $item->quantity + 1 }})">➕</button>
+                                                value="{{ $currentQty }}" readonly>
+                                            
+                                            {{-- Botón de incrementar --}}
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                onclick="incrementQuantity('{{ $itemId }}', '{{ $currentQty }}')">➕</button>
                                         </div>
                                     </div>
 
@@ -109,7 +120,8 @@
                                 <div class="d-flex gap-2">
                                     <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">Seguir
                                         Comprando</a>
-                                    <a href="{{ route('checkout') }}" class="btn btn-primary px-4">Proceder al Pago 💳</a>
+                                    <a href="{{ route('checkout.index') }}" class="btn btn-primary px-4">Proceder al Pago
+                                        💳</a>
                                 </div>
                             </div>
                         </div>
@@ -120,6 +132,16 @@
     </div>
 
     <script>
+        function incrementQuantity(itemId, currentQuantity) {
+            const newQuantity = Math.min(10, currentQuantity + 1);
+            updateQuantity(itemId, newQuantity);
+        }
+
+        function decrementQuantity(itemId, currentQuantity) {
+            const newQuantity = Math.max(1, currentQuantity - 1);
+            updateQuantity(itemId, newQuantity);
+        }
+
         function updateQuantity(itemId, newQuantity) {
             if (newQuantity < 1) return;
             if (newQuantity > 10) {
@@ -127,11 +149,11 @@
                 return;
             }
 
-// Usamos un formulario oculto para actualizar (redirección completa)
+            // Usamos un formulario oculto para actualizar (redirección completa)
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/cart/${itemId}`;
-            
+
             // Agregar CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]');
             if (csrfToken) {
@@ -141,21 +163,21 @@
                 csrfInput.value = csrfToken.getAttribute('content');
                 form.appendChild(csrfInput);
             }
-            
+
             // Agregar método PUT
             const methodInput = document.createElement('input');
             methodInput.type = 'hidden';
             methodInput.name = '_method';
             methodInput.value = 'PUT';
             form.appendChild(methodInput);
-            
+
             // Agregar quantity
             const quantityInput = document.createElement('input');
             quantityInput.type = 'hidden';
             quantityInput.name = 'quantity';
             quantityInput.value = newQuantity;
             form.appendChild(quantityInput);
-            
+
             // Enviar formulario
             document.body.appendChild(form);
             form.submit();

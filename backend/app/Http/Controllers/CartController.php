@@ -46,7 +46,7 @@ class CartController extends Controller
             return view('cart.index', compact('cartItems', 'total', 'itemCount'));
             
         } catch (\Exception $e) {
-            return redirect()->route('home')->with('error', 'Error al cargar el carrito: ' . $e->getMessage());
+            return redirect('/cart')->with('error', 'Error al cargar el carrito: ' . $e->getMessage());
         }
     }
 
@@ -89,7 +89,113 @@ class CartController extends Controller
     }
 
     /**
-     * ➕ MÉTODO: store - Agregar producto al carrito (Web)
+     * ➕ MÉTODO: add - Agregar producto al carrito (AJAX)
+     *
+     * Agrega un producto al carrito sin redireccionar, devuelve JSON
+     *
+     * Ruta: POST /cart/add
+     * Requiere: Usuario autenticado
+     */
+    public function add(Request $request): JsonResponse
+    {
+        try {
+            // Verificar que el usuario esté autenticado
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debes iniciar sesión para agregar productos al carrito',
+                    'redirect' => route('login')
+                ], 401);
+            }
+
+            // Validar datos de entrada
+            $validated = $request->validate([
+                'product_id' => 'required|integer|exists:products,id',
+                'quantity' => 'nullable|integer|min:1|max:10'
+            ]);
+
+            $quantity = $validated['quantity'] ?? 1;
+
+            // Verificar que el producto exista y tenga stock
+            $product = Product::find($validated['product_id']);
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], 404);
+            }
+
+            // Verificar stock disponible
+            if ($product->stock == 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Producto agotado. No hay unidades disponibles.'
+                ], 400);
+            }
+
+            if ($product->stock < $quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stock insuficiente. Solo hay ' . $product->stock . ' unidades disponibles.'
+                ], 400);
+            }
+
+            // Buscar si el producto ya está en el carrito
+            $existingItem = CartItem::where('user_id', auth()->id())
+                ->where('product_id', $validated['product_id'])
+                ->first();
+
+            $message = '';
+
+            if ($existingItem) {
+                // Si ya existe, actualizar cantidad
+                $newQuantity = $existingItem->quantity + $quantity;
+
+                if ($product->stock < $newQuantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stock insuficiente. Solo hay ' . $product->stock . ' unidades. Ya tienes ' . $existingItem->quantity . ' en el carrito.'
+                    ], 400);
+                }
+
+                $existingItem->update(['quantity' => $newQuantity]);
+                $message = 'Cantidad actualizada en el carrito';
+            } else {
+                // Si no existe, crear nuevo item
+                CartItem::create([
+                    'user_id' => auth()->id(),
+                    'product_id' => $validated['product_id'],
+                    'quantity' => $quantity
+                ]);
+                $message = 'Producto agregado al carrito correctamente';
+            }
+
+            // Obtener cantidad total del carrito
+            $cartCount = CartItem::where('user_id', auth()->id())->sum('quantity');
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'cart_count' => $cartCount,
+                'product_name' => $product->name
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos inválidos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al agregar el producto: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ➕ MÉTODO: store - Agregar producto al carrito (Web) - REDIRECCIÓN
      *
      * Agrega un producto al carrito y redirige al carrito
      *
@@ -172,24 +278,28 @@ class CartController extends Controller
             // Buscar el item en el carrito del usuario
             $cartItem = CartItem::where('user_id', auth()->id())
                 ->where('id', $id)
+                ->with('product')
                 ->first();
 
             if (!$cartItem) {
-                return redirect()->route('cart.index')->with('error', 'Item no encontrado en tu carrito');
+                return back()->with('error', 'Item no encontrado en tu carrito');
             }
 
             // Verificar stock
             if ($cartItem->product->stock < $validated['quantity']) {
-                return redirect()->route('cart.index')->with('error', 'Stock insuficiente. Solo hay ' . $cartItem->product->stock . ' unidades disponibles');
+                return back()->with('error', 'Stock insuficiente. Solo hay ' . $cartItem->product->stock . ' unidades disponibles');
             }
 
+            // Determinar si se incrementa o decrementa
+            $action = $validated['quantity'] > $cartItem->quantity ? 'incrementada' : 'disminuida';
+            
             // Actualizar cantidad
             $cartItem->update(['quantity' => $validated['quantity']]);
 
-            return redirect()->route('cart.index')->with('success', 'Cantidad actualizada exitosamente');
+            return back()->with('success', "Cantidad {$action} exitosamente");
 
         } catch (\Exception $e) {
-            return redirect()->route('cart.index')->with('error', 'Error al actualizar cantidad: ' . $e->getMessage());
+            return back()->with('error', 'Error al actualizar cantidad: ' . $e->getMessage());
         }
     }
 
@@ -260,19 +370,20 @@ class CartController extends Controller
             // Buscar el item en el carrito del usuario
             $cartItem = CartItem::where('user_id', auth()->id())
                 ->where('id', $id)
+                ->with('product')
                 ->first();
 
             if (!$cartItem) {
-                return redirect()->route('cart.index')->with('error', 'Item no encontrado en tu carrito');
+                return back()->with('error', 'Item no encontrado en tu carrito');
             }
 
             // Eliminar el item
             $cartItem->delete();
 
-            return redirect()->route('cart.index')->with('success', 'Producto eliminado del carrito exitosamente');
+            return back()->with('success', 'Producto eliminado del carrito exitosamente');
 
         } catch (\Exception $e) {
-            return redirect()->route('cart.index')->with('error', 'Error al eliminar producto del carrito: ' . $e->getMessage());
+            return back()->with('error', 'Error al eliminar producto del carrito: ' . $e->getMessage());
         }
     }
 
@@ -328,16 +439,16 @@ class CartController extends Controller
         try {
             // Verificar que el método sea POST
             if ($request->method() !== 'POST') {
-                return redirect()->route('cart.index')->with('error', 'Método no permitido');
+                return redirect('/cart')->with('error', 'Método no permitido');
             }
 
             // Eliminar todos los items del carrito del usuario
             $deletedCount = CartItem::where('user_id', auth()->id())->delete();
 
-            return redirect()->route('cart.index')->with('success', "Carrito vaciado exitosamente ($deletedCount productos eliminados)");
+            return redirect('/cart')->with('success', "Carrito vaciado exitosamente ($deletedCount productos eliminados)");
 
         } catch (\Exception $e) {
-            return redirect()->route('cart.index')->with('error', 'Error al vaciar el carrito: ' . $e->getMessage());
+            return redirect('/cart')->with('error', 'Error al vaciar el carrito: ' . $e->getMessage());
         }
     }
 

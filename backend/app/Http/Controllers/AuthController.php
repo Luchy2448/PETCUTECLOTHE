@@ -325,4 +325,38 @@ class AuthController extends Controller
 
         return redirect()->route('home')->with('success', '¡Sesión cerrada!');
     }
+
+    /**
+     * 🔐 MÉTODO: getTokenForTesting - Obtener token para testing
+     *
+     * Este método crea o devuelve un token de prueba para facilitar el testing
+     *
+     * Ruta: GET /api/token/test
+     */
+    public function getTokenForTesting(): JsonResponse
+    {
+        // Buscar o crear usuario de prueba
+        $user = User::firstOrCreate([
+            'email' => 'admin@petcute.com'
+        ], [
+            'name' => 'Admin Test',
+            'password' => Hash::make('password')
+        ]);
+
+        // Eliminar tokens anteriores de este usuario
+        $user->tokens()->delete();
+
+        // Crear nuevo token usando el método oficial de Sanctum
+        $token = $user->createToken('test-token');
+
+        return response()->json([
+            'message' => 'Token de prueba generado',
+            'token' => $token->plainTextToken,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email
+            ]
+        ]);
+    }
 }

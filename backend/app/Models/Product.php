@@ -139,4 +139,81 @@ class Product extends Model
     {
         return $this->image_url ?? 'https://via.placeholder.com/300x300?text=Sin+Imagen';
     }
+
+    /**
+     * 🔍 SCOPE: Búsqueda de productos
+     *
+     * Permite buscar productos por nombre, descripción o marca
+     */
+    public function scopeSearch($query, $search)
+    {
+        if (!$search) return $query;
+        
+        return $query->where(function ($q) use ($search) {
+            $q->where('name', 'LIKE', "%{$search}%")
+              ->orWhere('description', 'LIKE', "%{$search}%")
+              ->orWhere('brand', 'LIKE', "%{$search}%");
+        });
+    }
+
+    /**
+     * 📊 SCOPE: Ordenamiento
+     *
+     * Permite ordenar productos por diferentes criterios
+     */
+    public function scopeSort($query, $sortBy)
+    {
+        return match ($sortBy) {
+            'price_asc' => $query->orderBy('price', 'asc'),
+            'price_desc' => $query->orderBy('price', 'desc'),
+            'name_asc' => $query->orderBy('name', 'asc'),
+            'name_desc' => $query->orderBy('name', 'desc'),
+            'newest' => $query->orderBy('created_at', 'desc'),
+            'oldest' => $query->orderBy('created_at', 'asc'),
+            'relevance' => $query->orderBy('name', 'asc'),
+            default => $query->orderBy('created_at', 'desc'),
+        };
+    }
+
+    /**
+     * 🏷️ SCOPE: Filtrar por categoría
+     */
+    public function scopeByCategory($query, $categoryId)
+    {
+        if (!$categoryId) return $query;
+        return $query->where('category_id', $categoryId);
+    }
+
+    /**
+     * 💰 SCOPE: Filtrar por rango de precios
+     */
+    public function scopePriceRange($query, $minPrice = null, $maxPrice = null)
+    {
+        if ($minPrice) {
+            $query->where('price', '>=', $minPrice);
+        }
+        
+        if ($maxPrice) {
+            $query->where('price', '<=', $maxPrice);
+        }
+        
+        return $query;
+    }
+
+    /**
+     * 📏 SCOPE: Filtrar por talla
+     */
+    public function scopeBySize($query, $size)
+    {
+        if (!$size) return $query;
+        return $query->where('size', $size);
+    }
+
+    /**
+     * ✅ SCOPE: Solo productos con stock
+     */
+    public function scopeInStock($query)
+    {
+        return $query->where('stock', '>', 0);
+    }
 }

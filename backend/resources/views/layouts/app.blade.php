@@ -450,69 +450,201 @@
     
     <!-- Cart Functionality -->
     <script>
-        // 🛒 Función para agregar producto al carrito
-        function addToCart(productId) {
-            // Deshabilitar el botón temporalmente
-            const button = event.target;
-            button.disabled = true;
-            button.innerHTML = '🔄 Agregando...';
+        // 🛒 Función para agregar producto al carrito con AJAX
+        function addToCart(productId, buttonElement) {
+            // Si no se pasa el botón, buscar el más cercano
+            const button = buttonElement || (event ? event.target : null);
             
-            // Realizar la petición a la RUTA WEB (usando formulario con CSRF)
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/cart';
+            let originalText = '🛒 Agregar';
             
-            // Agregar CSRF token
-            const csrfToken = document.querySelector('meta[name="csrf-token"]');
-            if (csrfToken) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfToken.getAttribute('content');
-                form.appendChild(csrfInput);
+            // Si encontramos un botón, guardar el texto original
+            if (button && button.tagName === 'BUTTON') {
+                originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '🔄 Agregando...';
             }
             
-            // Agregar product_id
-            const productIdInput = document.createElement('input');
-            productIdInput.type = 'hidden';
-            productIdInput.name = 'product_id';
-            productIdInput.value = productId;
-            form.appendChild(productIdInput);
-            
-            // Agregar quantity
-            const quantityInput = document.createElement('input');
-            quantityInput.type = 'hidden';
-            quantityInput.name = 'quantity';
-            quantityInput.value = 1;
-            form.appendChild(quantityInput);
-            
-            // Enviar formulario
-            document.body.appendChild(form);
-            form.submit();
+            // Realizar la petición AJAX
+            fetch('{{ route("cart.add") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Habilitar el botón si existe
+                if (button && button.tagName === 'BUTTON') {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
+                
+                if (data.success) {
+                    // Mostrar toast de éxito
+                    showCartToast(data.message, 'success', data.cart_count);
+                    
+                    // Actualizar contador del navbar
+                    updateCartBadge(data.cart_count);
+                } else {
+                    // Mostrar toast de error
+                    showCartToast(data.message, 'error', null);
+                    
+                    // Si requiere login, redirigir
+                    if (data.redirect) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 2000);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (button && button.tagName === 'BUTTON') {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
+                showCartToast('Error al agregar el producto', 'error', null);
+            });
         }
         
-        // 🔔 Función para mostrar notificaciones
-        function showNotification(title, message, type) {
-            // Crear elemento de notificación
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'success' ? 'alert-success' : 'alert-danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-            notification.style.zIndex = '9999';
-            notification.style.minWidth = '300px';
-            notification.innerHTML = `
-                <button type="button" class="btn-close" data-bs-dismiss="alert">&times;</button>
-                <strong>${title}</strong> ${message}
+        // 🔔 Función para mostrar toast flotante del carrito
+        function showCartToast(message, type, cartCount) {
+            // Crear el toast
+            const toast = document.createElement('div');
+            toast.className = 'cart-toast show';
+            
+            const bgColor = type === 'success' ? '#d4edda' : '#f8d7da';
+            const borderColor = type === 'success' ? '#c3e6cb' : '#f5c6cb';
+            const icon = type === 'success' ? '✅' : '❌';
+            
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                padding: 15px 20px;
+                background-color: ${bgColor};
+                border: 1px solid ${borderColor};
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                animation: slideIn 0.3s ease-out;
             `;
             
-            // Agregar al DOM
-            document.body.appendChild(notification);
+            const iconSpan = document.createElement('span');
+            iconSpan.style.fontSize = '1.2rem';
+            iconSpan.textContent = icon;
             
-            // Auto-eliminar después de 3 segundos
+            const messageDiv = document.createElement('div');
+            messageDiv.style.flex = '1';
+            messageDiv.innerHTML = `
+                <strong>${type === 'success' ? '¡Éxito!' : 'Error'}</strong><br>
+                <small>${message}</small>
+            `;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '×';
+            closeBtn.style.cssText = `
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: #333;
+                padding: 0;
+                line-height: 1;
+            `;
+            closeBtn.onclick = () => toast.remove();
+            
+            // Botón "Ver Carrito" si fue exitoso
+            let viewCartBtn = null;
+            if (type === 'success') {
+                viewCartBtn = document.createElement('a');
+                viewCartBtn.href = '/cart';
+                viewCartBtn.className = 'btn btn-sm btn-primary';
+                viewCartBtn.style.cssText = `
+                    background-color: var(--color-rosa);
+                    border-color: var(--color-rosa);
+                    color: white;
+                    padding: 5px 15px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    font-size: 0.85rem;
+                    white-space: nowrap;
+                `;
+                viewCartBtn.textContent = '🛒 Ver Carrito';
+            }
+            
+            // Ensamblar el toast
+            const contentDiv = document.createElement('div');
+            contentDiv.style.display = 'flex';
+            contentDiv.style.alignItems = 'center';
+            contentDiv.style.gap = '10px';
+            contentDiv.style.flex = '1';
+            
+            contentDiv.appendChild(iconSpan);
+            contentDiv.appendChild(messageDiv);
+            
+            toast.appendChild(contentDiv);
+            if (viewCartBtn) {
+                toast.appendChild(viewCartBtn);
+            }
+            toast.appendChild(closeBtn);
+            
+            // Agregar al DOM
+            document.body.appendChild(toast);
+            
+            // Agregar animación CSS si no existe
+            if (!document.getElementById('toast-styles')) {
+                const style = document.createElement('style');
+                style.id = 'toast-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Auto-remover después de 5 segundos
             setTimeout(() => {
-                notification.remove();
-            }, 3000);
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
         }
         
-        // 📊 Función para actualizar el contador del carrito
+        // 📊 Función para actualizar el badge del carrito en el navbar
+        function updateCartBadge(count) {
+            const badges = document.querySelectorAll('.cart-badge');
+            badges.forEach(badge => {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+        
+        // 📊 Función para obtener el contador del carrito
         function updateCartCount() {
             fetch('/cart', {
                 method: 'GET',
@@ -523,7 +655,6 @@
             })
             .then(response => {
                 if (response.redirected) {
-                    // Si redirige a login, el usuario no está autenticado
                     return null;
                 }
                 return response.text();
@@ -531,17 +662,14 @@
             .then(html => {
                 if (!html) return;
                 
-                // Crear un parser temporal para extraer datos
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // Buscar el contador de items en el carrito
                 const itemCountElement = doc.querySelector('.cart-item-count');
                 const cartBadge = document.querySelector('.cart-badge');
                 
                 if (itemCountElement) {
                     const itemCount = itemCountElement.textContent || 0;
-                    // Actualizar badge del carrito en el navbar si existe
                     if (cartBadge) {
                         cartBadge.textContent = itemCount;
                         cartBadge.style.display = itemCount > 0 ? 'inline-block' : 'none';
