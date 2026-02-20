@@ -17,11 +17,13 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'quantity',
+        'price',
         'price_at_purchase',
         'size',
     ];
 
     protected $casts = [
+        'price' => 'decimal:2',
         'price_at_purchase' => 'decimal:2',
         'created_at' => 'datetime',
     ];

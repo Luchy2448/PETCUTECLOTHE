@@ -403,9 +403,11 @@
                             </a>
                         </li>
                     @else
+                        @if(auth()->user() && auth()->user()->is_admin == 1)
                         <li class="nav-item">
-                            <a class="nav-link" href="/admin/products">Admin</a>
+                            <a class="nav-link" href="/admin/dashboard">Admin</a>
                         </li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link position-relative" href="/cart">
                                 🛒 Carrito

@@ -29,6 +29,22 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="lastname" class="form-label">👤 Apellido</label>
+                            <input type="text" class="form-control" id="lastname" name="lastname" value="{{ old('lastname') }}" placeholder="Tu apellido (opcional)">
+                            @error('lastname')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="dni" class="form-label">🪪 DNI</label>
+                            <input type="text" class="form-control" id="dni" name="dni" value="{{ old('dni') }}" placeholder="Tu DNI (opcional)">
+                            @error('dni')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
                             <label for="email" class="form-label">📧 Email</label>
                             <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required placeholder="tu@email.com">
                             @error('email')

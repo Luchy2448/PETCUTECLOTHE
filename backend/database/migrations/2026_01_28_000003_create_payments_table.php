@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained();
+            $table->unsignedBigInteger('order_id')->nullable();
             $table->string('mercado_pago_preference_id')->nullable();
             $table->string('mercado_pago_payment_id')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');

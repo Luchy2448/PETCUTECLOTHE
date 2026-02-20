@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -11,6 +12,7 @@ use Illuminate\Http\JsonResponse;
  * 👩 AdminController - El Panel de Administración
  *
  * Este controlador maneja el panel de administración para:
+ * - Dashboard con estadísticas
  * - Ver lista de productos
  * - Ver formulario de creación
  * - Crear nuevos productos
@@ -22,20 +24,109 @@ use Illuminate\Http\JsonResponse;
 class AdminController extends Controller
 {
     /**
-     * 📋 MÉTODO: products - Ver lista de productos (Admin)
+     * 📊 Dashboard - Panel principal de administración
      *
-     * Muestra la tabla completa de productos para administración
+     * Muestra estadísticas generales y pedidos recientes
      *
-     * Ruta: GET /admin/products
+     * Ruta: GET /admin/dashboard
      */
-public function products()
-{
-    // Obtener productos paginados (10 por página)
-    $productos = Product::with('category')->orderBy('created_at', 'desc')->paginate(10);
+    public function dashboard()
+    {
+        // Estadísticas de pedidos
+        $stats = [
+            'total' => Order::count(),
+            'pending' => Order::where('status', 'pending')->count(),
+            'processing' => Order::where('status', 'processing')->count(),
+            'shipped' => Order::where('status', 'shipped')->count(),
+            'delivered' => Order::where('status', 'delivered')->count(),
+            'cancelled' => Order::where('status', 'cancelled')->count(),
+            'total_revenue' => Order::where('status', 'delivered')->sum('total'),
+        ];
+
+        // Pedidos recientes
+        $recentOrders = Order::with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Estadísticas de productos
+        $productStats = [
+            'total' => Product::count(),
+            'out_of_stock' => Product::where('stock', 0)->count(),
+            'low_stock' => Product::where('stock', '>', 0)->where('stock', '<=', 5)->count(),
+        ];
+
+        return view('admin.dashboard.index', compact('stats', 'recentOrders', 'productStats'));
+    }
+
+    /**
+     * 📋 Index - Lista de productos (para Route::resource)
+     */
+    public function index()
+    {
+        return $this->productsList();
+    }
+
+    /**
+     * 🏠 Admin Home - Punto de entrada principal del admin
+     *
+     * Muestra diferentes vistas según la ruta accedida
+     */
+    public function adminHome(Request $request)
+    {
+        $path = $request->path();
+        
+        if (str_contains($path, 'productos')) {
+            return $this->productsList();
+        }
+        if (str_contains($path, 'categories') || str_contains($path, 'categorias')) {
+            return $this->categoriesList();
+        }
+        if (str_contains($path, 'orders') || str_contains($path, 'pedidos')) {
+            return $this->ordersList();
+        }
+        if (str_contains($path, 'users') || str_contains($path, 'usuarios')) {
+            return $this->usersList();
+        }
+        
+        return $this->dashboard();
+    }
     
-    // Retornar vista de administración
-    return view('admin.products.index', compact('productos'));
-}
+    /**
+     * 📋 productsList - Ver lista de productos (Admin)
+     */
+    private function productsList()
+    {
+        $productos = Product::with('category')->orderBy('created_at', 'desc')->paginate(10);
+        return view('admin.products.index', compact('productos'));
+    }
+    
+    /**
+     * 📋 MÉTODO: categoriesList - Ver lista de categorías (Admin)
+     */
+    private function categoriesList()
+    {
+        $categorias = Category::withCount('products')->orderBy('name')->get();
+        return view('admin.categories.index', compact('categorias'));
+    }
+    
+    /**
+     * 📋 MÉTODO: ordersList - Ver lista de pedidos (Admin)
+     */
+    private function ordersList()
+    {
+        $orders = \App\Models\Order::with('user')->orderBy('created_at', 'desc')->paginate(15);
+        return view('admin.orders.index', compact('orders'));
+    }
+    
+    /**
+     * 📋 MÉTODO: usersList - Ver lista de usuarios (Admin)
+     */
+    private function usersList()
+    {
+        $users = \App\Models\User::orderBy('created_at', 'desc')->paginate(15);
+        return view('admin.users.index', compact('users'));
+    }
 
     /**
      * 📋 MÉTODO: create - Mostrar formulario de creación
@@ -162,6 +253,9 @@ public function products()
                 ->with('error', 'Producto no encontrado');
         }
 
+        // Eliminar primero los order_items relacionados
+        \App\Models\OrderItem::where('product_id', $id)->delete();
+
         // Eliminar el producto
         $producto->delete();
 
@@ -190,5 +284,17 @@ public function products()
 
         // Retornar vista de detalles
         return view('admin.products.show', compact('producto'));
+    }
+
+    /**
+     * Hacer admin a un usuario
+     */
+    public function makeAdmin(\App\Models\User $user)
+    {
+        $user->is_admin = true;
+        $user->save();
+
+        return redirect()->route('admin.users.list')
+            ->with('success', 'Usuario ' . $user->name . ' ahora es administrador');
     }
 }

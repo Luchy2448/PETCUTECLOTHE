@@ -9,6 +9,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\SearchController;
 
 /*
@@ -79,6 +80,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
         Route::post('/process', [CheckoutController::class, 'process'])->name('process');
+        Route::get('/success/{order}', [CheckoutController::class, 'checkoutSuccess'])->name('success')->middleware('auth');
     });
 
     // Páginas de resultado de pago
@@ -104,10 +106,31 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         
-        // 📊 Dashboard
+        // 📊 Dashboard principal
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
         
-        // 📦 Gestión de productos
+        // 📋 Admin principal - muestran diferentes vistas según parámetro
+        Route::get('/', [AdminController::class, 'adminHome'])->name('index');
+        Route::get('/products', [AdminController::class, 'adminHome'])->name('products.list');
+        Route::get('/orders', [AdminController::class, 'adminHome'])->name('orders.list');
+        Route::get('/users', [AdminController::class, 'adminHome'])->name('users.list');
+        
+        // 📂 Gestión de categorías (resource + alias para compatibilidad)
+        Route::resource('categories', \App\Http\Controllers\AdminCategoryController::class)->names([
+            'index' => 'categories.index',
+            'store' => 'categories.store',
+            'update' => 'categories.update',
+            'destroy' => 'categories.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        // Alias para compatibilidad con código existente
+        Route::get('/categories-list', [AdminCategoryController::class, 'index'])->name('categories.list');
+        
+        // 👤 Gestión de usuarios
+        Route::post('/users/{user}/make-admin', [AdminController::class, 'makeAdmin'])->name('users.makeAdmin');
+        
+        // 📦 Gestión de productos (CRUD completo) - solo acciones específicas
+        Route::get('/productos', [AdminController::class, 'adminHome'])->name('productos.list');
         Route::resource('products', AdminController::class)->names([
             'index' => 'products.index',
             'create' => 'products.create',
@@ -129,8 +152,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/stats', [AdminOrderController::class, 'stats'])->name('stats');
         });
         
-        // 📈 Estadísticas generales
-        Route::get('/stats', [AdminController::class, 'stats'])->name('stats');
+        // 📈 Estadísticas desde dashboard
+        Route::get('/estadisticas', [AdminController::class, 'dashboard'])->name('estadisticas');
     });
 });
 
@@ -149,11 +172,11 @@ Route::post('/webhook/mercadopago', [PaymentController::class, 'webhook'])->name
 */
 
 // Mantener compatibilidad temporal con rutas antiguas
-Route::get('/cart', [CartController::class, 'index'])->name('cart.legacy');
-Route::post('/cart', [CartController::class, 'store'])->name('cart.store.legacy');
-Route::put('/cart/{id}', [CartController::class, 'update'])->name('cart.update.legacy');
-Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy.legacy');
-Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear.legacy');
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+Route::put('/cart/{id}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 
 /*
 |--------------------------------------------------------------------------

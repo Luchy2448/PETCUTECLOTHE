@@ -1,6 +1,7 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Gestión de Productos - PET CUTE CLOTHES')
+@section('breadcrumb', 'Productos')
 
 @section('content')
 <div class="container-fluid py-4">
@@ -13,11 +14,11 @@
                     <p class="text-muted mb-0">Administra el inventario de tu tienda</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left"></i> Volver al Catálogo
+                    <a href="{{ route('home') }}" class="btn btn-outline-secondary" target="_blank">
+                        <i class="bi bi-shop"></i> Ver Tienda
                     </a>
                     <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Crear Nuevo Producto
+                        <i class="bi bi-plus-circle"></i> Crear Nuevo Producto
                     </a>
                 </div>
             </div>
@@ -122,14 +123,14 @@
                                 <td class="text-center">
                                     <div class="btn-group" role="group">
                                         <a href="{{ route('admin.products.edit', $producto->id) }}" 
-                                           class="btn btn-sm btn-outline-success" title="Editar">
-                                            <i class="fas fa-edit"></i>
+                                           class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
                                         </a>
                                         <button type="button" 
                                                 class="btn btn-sm btn-outline-danger delete-product" 
                                                 data-product-id="{{$producto->id}}" 
                                                 title="Eliminar">
-                                            <i class="fas fa-trash"></i>
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
                                 </td>

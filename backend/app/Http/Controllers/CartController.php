@@ -282,12 +282,12 @@ class CartController extends Controller
                 ->first();
 
             if (!$cartItem) {
-                return back()->with('error', 'Item no encontrado en tu carrito');
+                return redirect()->route('cart.index')->with('error', 'Item no encontrado en tu carrito');
             }
 
             // Verificar stock
             if ($cartItem->product->stock < $validated['quantity']) {
-                return back()->with('error', 'Stock insuficiente. Solo hay ' . $cartItem->product->stock . ' unidades disponibles');
+                return redirect()->route('cart.index')->with('error', 'Stock insuficiente. Solo hay ' . $cartItem->product->stock . ' unidades disponibles');
             }
 
             // Determinar si se incrementa o decrementa
@@ -296,10 +296,10 @@ class CartController extends Controller
             // Actualizar cantidad
             $cartItem->update(['quantity' => $validated['quantity']]);
 
-            return back()->with('success', "Cantidad {$action} exitosamente");
+            return redirect()->route('cart.index')->with('success', "Cantidad {$action} exitosamente");
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al actualizar cantidad: ' . $e->getMessage());
+            return redirect()->route('cart.index')->with('error', 'Error al actualizar cantidad: ' . $e->getMessage());
         }
     }
 
@@ -359,7 +359,7 @@ class CartController extends Controller
     /**
      * 🗑️ MÉTODO: destroy - Eliminar item del carrito (Web)
      *
-     * Elimina un producto específico del carrito y redirige
+     * Elimina un producto específico del carrito y redirige al carrito
      *
      * Ruta: DELETE /cart/{id}
      * Requiere: Sesión de autenticación web
@@ -374,16 +374,16 @@ class CartController extends Controller
                 ->first();
 
             if (!$cartItem) {
-                return back()->with('error', 'Item no encontrado en tu carrito');
+                return redirect()->route('cart.index')->with('error', 'Item no encontrado en tu carrito');
             }
 
             // Eliminar el item
             $cartItem->delete();
 
-            return back()->with('success', 'Producto eliminado del carrito exitosamente');
+            return redirect()->route('cart.index')->with('success', 'Producto eliminado del carrito exitosamente');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al eliminar producto del carrito: ' . $e->getMessage());
+            return redirect()->route('cart.index')->with('error', 'Error al eliminar producto del carrito: ' . $e->getMessage());
         }
     }
 
@@ -439,16 +439,16 @@ class CartController extends Controller
         try {
             // Verificar que el método sea POST
             if ($request->method() !== 'POST') {
-                return redirect('/cart')->with('error', 'Método no permitido');
+                return redirect()->route('cart.index')->with('error', 'Método no permitido');
             }
 
             // Eliminar todos los items del carrito del usuario
             $deletedCount = CartItem::where('user_id', auth()->id())->delete();
 
-            return redirect('/cart')->with('success', "Carrito vaciado exitosamente ($deletedCount productos eliminados)");
+            return redirect()->route('cart.index')->with('success', "Carrito vaciado exitosamente ($deletedCount productos eliminados)");
 
         } catch (\Exception $e) {
-            return redirect('/cart')->with('error', 'Error al vaciar el carrito: ' . $e->getMessage());
+            return redirect()->route('cart.index')->with('error', 'Error al vaciar el carrito: ' . $e->getMessage());
         }
     }
 

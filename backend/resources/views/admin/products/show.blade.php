@@ -1,6 +1,7 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', $producto->name . ' - Admin - PET CUTE CLOTHES')
+@section('breadcrumb', 'Detalle Producto')
 
 @section('content')
 <div class="container py-5">
